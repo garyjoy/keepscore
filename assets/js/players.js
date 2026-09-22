@@ -126,4 +126,5 @@ export function attachNamePicker(root, getOptions) {
     } else if (event.key === 'Tab') close();
   });
   window.addEventListener('hashchange', close);
+  window.addEventListener('popstate', close);
 }

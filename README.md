@@ -24,7 +24,7 @@ Local-network HTTP supports match entry and storage, but offline installation ne
 - Enter finished scores directly into the grid, with home on the left. Score edits save immediately. Name fields commit when you leave the field, with unfinished typing also saved as a draft. Invalid scores remain editable and do not contribute to totals.
 - Game 3 appears when the first two valid games are split. If corrections make it unnecessary, you are asked before its scores are cleared. Cancelling retains the scores but excludes them from totals; they reappear if the first two become split again.
 - Matches can be left unfinished. The final winner appears only after all nine rubbers are decided. Concessions can be entered as 21–0 where appropriate to the club's rules.
-- With a score box focused, Enter advances to the next visible score and Shift+Enter moves back. The existing score is selected for replacement. Hidden third games are skipped, rubbers follow match order, and navigation stops at the first/last score. Tab uses the browser’s normal behaviour.
+- Field navigation uses the browser’s native tab order. There are no custom Enter or Tab shortcuts.
 - Notes save while typing. Existing records are directly editable.
 
 ## Offline and storage
@@ -45,15 +45,17 @@ Publish the **contents of `dist/`** with GitHub Pages (via a Pages deployment wo
 ## Structure and extension points
 
 - `assets/js/scoring.js`: pure scoring and lineup validation; independent of UI and storage.
-- `assets/js/keyboard.js`: Enter/Shift+Enter score navigation, independent of scoring and storage.
+- `assets/js/navigation.js`: in-app view changes and browser Back/Forward handling.
+- `assets/js/players.js`: shared team/player suggestions and field-attached pickers.
 - `assets/js/repository.js`: asynchronous `open()` / `save(state)` adapter around IndexedDB. Schema version 1, stable UUIDs and ISO update timestamps provide a base for migrations, export/import, or an API adapter.
 - `assets/js/app.js`: match history, directories and score-sheet UI. Matches snapshot names and lineups rather than deriving historical display from mutable directory records.
 - `sw.js`: caches only the static application, never match data.
 - `tests/scoring.test.js`: exhaustive 0–30 score validation plus match, rubber and lineup rules.
-- `tests/keyboard.test.js`: score navigation, hidden games, boundaries and confirmation dialogs.
+- `tests/players.test.js`: suggestion filtering, touch selection, scrolling, and trackpad selection.
+- `tests/navigation.test.js`: browser history, Back/Forward, and direct match links.
 
 Future multi-device storage should add record-level operations and conflict/version handling to the repository contract. The initial adapter saves a single state document atomically; it is intentionally for one device and one active editing tab.
 
 ## Validation
 
-`npm test` runs the scoring and keyboard navigation tests. `npm run build` produces the deployable static artifact. Browser and real-iPad checks are still recommended for touch keyboard, install and offline lifecycle behaviour.
+`npm test` runs the scoring, picker and browser-history navigation tests. `npm run build` produces the deployable static artifact. Browser and real-iPad checks are still recommended for touch keyboard, install and offline lifecycle behaviour.

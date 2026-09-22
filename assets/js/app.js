@@ -1,11 +1,11 @@
+import { createNavigation } from './navigation.js';
 import { attachNamePicker, playerSuggestions, teamSuggestions } from './players.js';
-import { handleScoreEnter } from './keyboard.js';
 import { ORDER, gameResult, needsThird, rubberResult, matchResult, lineupIssues } from './scoring.js';
 import { LocalRepository, newMatch, createId } from './repository.js';
 
 const app = document.querySelector('#app');
 const repository = new LocalRepository();
-let state, current, view = 'matches', filter = '', teamFilter = '', saved = 'Saved on this device', saveError = '', revision = 0, offlineReady = false, playersCollapsed = false;
+let navigation, state, current, view = 'matches', filter = '', teamFilter = '', saved = 'Saved on this device', saveError = '', revision = 0, offlineReady = false, playersCollapsed = false;
 const escape = value => String(value ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 const id = createId;
 const activeTeams = () => state.teams.filter(t => !t.archived).sort((a,b) => a.name.localeCompare(b.name));
@@ -40,7 +40,7 @@ function touch() { if (current) current.updatedAt = new Date().toISOString(); pe
 
 function shell(content) {
   app.classList.toggle('match-view', view === 'sheet');
-  app.innerHTML = `<header class="app-header" ${view === 'sheet' ? 'hidden' : ''}><a href="#matches" class="brand" aria-label="KeepScore home"><span class="brand-mark" aria-hidden="true">K<span>•</span></span><span>KeepScore<small>BADMINTON</small></span></a><nav aria-label="Main navigation">${['matches','teams','players'].map(name => `<a href="#${name}" ${view === name || (view === 'sheet' && name === 'matches') ? 'aria-current="page"' : ''}>${name[0].toUpperCase()+name.slice(1)}</a>`).join('')}</nav><span class="connection"><i></i><span data-connection></span></span></header><div id="save-error" class="error-banner" role="alert" hidden></div><main>${content}</main><footer><span>KeepScore · 3 × 3 doubles</span><span data-save-status>${saved}</span></footer><dialog id="modal"></dialog>`;
+  app.innerHTML = `<header class="app-header" ${view === 'sheet' ? 'hidden' : ''}><a href="#matches" class="brand" aria-label="KeepScore home"><span class="brand-mark" aria-hidden="true">K<span>•</span></span><span>KeepScore<small>BADMINTON</small></span></a><nav aria-label="Main navigation">${['matches','teams','players'].map(name => `<button type="button" data-action="navigate" data-view="${name}" ${view === name || (view === 'sheet' && name === 'matches') ? 'aria-current="page"' : ''}>${name[0].toUpperCase()+name.slice(1)}</button>`).join('')}</nav><span class="connection"><i></i><span data-connection></span></span></header><div id="save-error" class="error-banner" role="alert" hidden></div><main>${content}</main><footer><span>KeepScore · 3 × 3 doubles</span><span data-save-status>${saved}</span></footer><dialog id="modal"></dialog>`;
   updateStatus();
 }
 
@@ -220,9 +220,6 @@ app.addEventListener('focusout', e => {
   if (current && el.matches('[data-team], [data-player]') && Object.hasOwn(current.setupDrafts || {}, draftKey(el))) el.dispatchEvent(new Event('change', { bubbles: true }));
 });
 
-window.addEventListener('keydown', e => {
-  if (view === 'sheet') handleScoreEnter(e, app);
-}, { capture: true });
 
 app.addEventListener('change', e => {
   const el = e.target;
@@ -256,10 +253,17 @@ app.addEventListener('change', e => {
 });
 
 app.addEventListener('click', e => {
+  const link = e.target.closest('a[href^="#"]');
+  if (link && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey && e.button === 0) {
+    e.preventDefault();
+    navigation.navigate(link.getAttribute('href'));
+    return;
+  }
   const button = e.target.closest('[data-action]');
   if (!button) return;
   const action = button.dataset.action, itemId = button.dataset.id;
-  if (action === 'new-match') { const match = newMatch(); state.matches.push(match); persist(); location.hash = `match/${match.id}`; }
+  if (action === 'navigate') { navigation.navigate(button.dataset.view); return; }
+  if (action === 'new-match') { const match = newMatch(); state.matches.push(match); persist(); navigation.navigate(`match/${match.id}`); }
   if (action === 'filter') { filter = button.dataset.value; renderMatches(); }
   if (action === 'retry') persist();
   if (action === 'toggle-players') { playersCollapsed = !playersCollapsed; refreshPlayerVisibility(); }
@@ -268,12 +272,12 @@ app.addEventListener('click', e => {
   if (action === 'edit-team') editTeam(state.teams.find(t => t.id === itemId));
   if (action === 'add-player') editPlayer();
   if (action === 'edit-player') editPlayer(state.players.find(p => p.id === itemId));
-  if (action === 'team-players') { teamFilter = itemId; location.hash = 'players'; }
+  if (action === 'team-players') { teamFilter = itemId; navigation.navigate('players'); }
   if (action === 'archive-team' || action === 'archive-player') {
     const item = (action === 'archive-team' ? state.teams : state.players).find(item => item.id === itemId);
     confirmAction(`Remove ${item.name}?`, 'This removes it from future selections. Existing match records are kept.', 'Remove', () => { item.archived = true; persist(); render(); });
   }
-  if (action === 'delete-match') confirmAction('Delete this match?', 'The score sheet and its scores will be permanently removed from this device.', 'Delete match', () => { state.matches = state.matches.filter(m => m.id !== current.id); current = null; persist(); location.hash = 'matches'; });
+  if (action === 'delete-match') confirmAction('Delete this match?', 'The score sheet and its scores will be permanently removed from this device.', 'Delete match', () => { state.matches = state.matches.filter(m => m.id !== current.id); current = null; persist(); navigation.navigate('matches'); });
   if (action === 'notes') modal(`<form method="dialog"><h2>Match notes</h2><p>Anything to remember about this match.</p>${field('Notes', `<textarea id="match-notes" rows="7" placeholder="Court details, a memorable rally…">${escape(current.notes)}</textarea>`)}<div class="dialog-actions"><span class="muted" data-save-status>${saved}</span><button class="primary">Done</button></div></form>`);
 });
 
@@ -294,14 +298,14 @@ attachNamePicker(app, input => {
   return playerSuggestions(state.players, current[input.dataset.player], Number(input.dataset.pair), Number(input.dataset.slot), input.value);
 });
 
-window.addEventListener('hashchange', () => { if (state) route(); });
 window.addEventListener('online', updateStatus);
 window.addEventListener('offline', updateStatus);
 window.addEventListener('beforeunload', e => { if (saveError || saved === 'Saving…') { e.preventDefault(); e.returnValue = ''; } });
 
 try {
   state = await repository.open();
-  route();
+  navigation = createNavigation(window, route);
+  navigation.start();
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js').then(() => navigator.serviceWorker.ready).then(() => { offlineReady = true; updateStatus(); }).catch(() => { offlineReady = false; updateStatus(); });
   }
