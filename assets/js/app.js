@@ -1,3 +1,4 @@
+import { VERSION_LABEL, announceLoadedVersion, watchForUpdate } from './releases.js';
 import { createNavigation } from './navigation.js';
 import { attachNamePicker, playerSuggestions, teamSuggestions } from './players.js';
 import { ORDER, gameResult, needsThird, rubberResult, matchResult, lineupIssues } from './scoring.js';
@@ -40,7 +41,7 @@ function touch() { if (current) current.updatedAt = new Date().toISOString(); pe
 
 function shell(content) {
   app.classList.toggle('match-view', view === 'sheet');
-  app.innerHTML = `<header class="app-header" ${view === 'sheet' ? 'hidden' : ''}><a href="#matches" class="brand" aria-label="KeepScore home"><span class="brand-mark" aria-hidden="true">K<span>•</span></span><span>KeepScore<small>BADMINTON</small></span></a><nav aria-label="Main navigation">${['matches','teams','players'].map(name => `<button type="button" data-action="navigate" data-view="${name}" ${view === name || (view === 'sheet' && name === 'matches') ? 'aria-current="page"' : ''}>${name[0].toUpperCase()+name.slice(1)}</button>`).join('')}</nav><span class="connection"><i></i><span data-connection></span></span></header><div id="save-error" class="error-banner" role="alert" hidden></div><main>${content}</main><footer><span>KeepScore · 3 × 3 doubles</span><span data-save-status>${saved}</span></footer><dialog id="modal"></dialog>`;
+  app.innerHTML = `<header class="app-header" ${view === 'sheet' ? 'hidden' : ''}><a href="#matches" class="brand" aria-label="KeepScore home"><span class="brand-mark" aria-hidden="true">K<span>•</span></span><span>KeepScore<small>BADMINTON</small></span></a><nav aria-label="Main navigation">${['matches','teams','players'].map(name => `<button type="button" data-action="navigate" data-view="${name}" ${view === name || (view === 'sheet' && name === 'matches') ? 'aria-current="page"' : ''}>${name[0].toUpperCase()+name.slice(1)}</button>`).join('')}</nav><div class="header-status"><span class="app-version">${escape(VERSION_LABEL)}</span><span class="connection"><i></i><span data-connection></span></span></div></header><div id="save-error" class="error-banner" role="alert" hidden></div><main>${content}</main><footer><span>KeepScore · 3 × 3 doubles · ${escape(VERSION_LABEL)}</span><span data-save-status>${saved}</span></footer><dialog id="modal"></dialog>`;
   updateStatus();
 }
 
@@ -74,7 +75,7 @@ function rubberCard(index) {
 }
 
 function renderSheet() {
-  shell(`<section class="sheet-heading"><div><a class="back-link" href="#matches">← Matches</a><h1>Score sheet <span class="format-label">3 × 3 doubles</span></h1></div><div class="sheet-actions"><span class="save-label" data-save-status>${saved}</span><button class="quiet danger" data-action="delete-match">Delete match</button></div></section>
+  shell(`<section class="sheet-heading"><div><a class="back-link" href="#matches">← Matches</a><h1>Score sheet <span class="format-label">3 × 3 doubles</span></h1></div><div class="sheet-actions"><span class="app-version">${escape(VERSION_LABEL)}</span><span class="save-label" data-save-status>${saved}</span><button class="quiet danger" data-action="delete-match">Delete match</button></div></section>
   <section class="summary" aria-label="Match summary">${field('Match date', `<input type="date" id="match-date" value="${escape(current.date)}" aria-label="Match date">`, 'stat date-stat')}<div class="stat result-stat"><span>Result</span><strong id="match-winner"></strong></div>${['Rubbers','Games','Points'].map(label => `<div class="stat"><span>${label}</span><strong id="total-${label.toLowerCase()}"></strong></div>`).join('')}<button class="stat notes-button" data-action="notes"><span>Notes</span><strong id="notes-indicator">${current.notes ? 'View notes' : '＋ Add note'}</strong></button></section>
   <div class="team-panels">${teamPanel('home')}<div class="lineup-toolbar" hidden><button class="lineup-toggle" data-action="toggle-players" title="Hide players" aria-expanded="true" aria-controls="home-lineup away-lineup"><span class="lineup-chevron" aria-hidden="true"></span><span class="sr-only" data-lineup-label>Hide players</span></button></div>${teamPanel('away')}</div>
   <div id="lineup-message" class="lineup-message" role="status"></div><div class="score-sheet-top"><div><h2>Rubbers <span id="progress-count"></span></h2></div></div>
@@ -306,8 +307,9 @@ try {
   state = await repository.open();
   navigation = createNavigation(window, route);
   navigation.start();
+  announceLoadedVersion();
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js').then(() => navigator.serviceWorker.ready).then(() => { offlineReady = true; updateStatus(); }).catch(() => { offlineReady = false; updateStatus(); });
+    navigator.serviceWorker.register('./sw.js').then(registration => { watchForUpdate(registration); return navigator.serviceWorker.ready; }).then(() => { offlineReady = true; updateStatus(); }).catch(() => { offlineReady = false; updateStatus(); });
   }
 } catch (error) {
   app.innerHTML = `<section class="empty-state"><h1>We couldn’t open your local records</h1><p>${escape(error.message)}<br>Check that browser storage is allowed, then reload.</p><button onclick="location.reload()">Try again</button></section>`;

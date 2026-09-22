@@ -59,3 +59,11 @@ Future multi-device storage should add record-level operations and conflict/vers
 ## Validation
 
 `npm test` runs the scoring, picker and browser-history navigation tests. `npm run build` produces the deployable static artifact. Browser and real-iPad checks are still recommended for touch keyboard, install and offline lifecycle behaviour.
+
+## Application versions
+
+Release versions are `1.<commit-count>.<short-commit-id>`, for example `1.12.a3b4c5d`. The count is the number of commits reachable from the built commit. This is a release identifier rather than strict semantic versioning, since the final component is a Git hash. Keep `main` history intact for an increasing count; rewriting history can reduce it. GitHub Actions fetches full history before building.
+
+The build stamps the version into the cached HTML, so the displayed version identifies the app actually loaded, including offline. It appears in the top navigation bar, footer, and match heading. Uncommitted builds and the development server are marked as local previews.
+
+A dismissible notice appears on the first release visit and whenever a different release loads. Reopening the same version does not repeat it (unless browser storage has been cleared). An update-ready notice explains when a newer offline app is waiting; close all KeepScore tabs/windows and reopen to activate it. The app never forces a reload during score entry. Version tracking uses a separate browser preference and does not change match records.

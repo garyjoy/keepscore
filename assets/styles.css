@@ -38,6 +38,14 @@
 }
 
 /* Shared text scale: values, editable text, labels, and supporting captions. */
+.app-version{font-size:11px;color:#6c7b88;white-space:nowrap}
+.header-status{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+@media(max-width:650px){.header-status{order:1;margin-left:auto}.app-header nav{order:2}}
+#release-notices{position:fixed;z-index:100;right:16px;bottom:16px;display:grid;gap:8px;width:min(460px,calc(100% - 32px))}
+.release-notice{display:flex;align-items:center;gap:12px;padding:14px 16px;background:#203e51;color:#fff;border-radius:12px;box-shadow:0 5px 24px #18334830;font-size:14px;line-height:1.45}
+.release-notice>span{flex:1}
+.release-notice button{flex-shrink:0;background:#fff;color:#203e51;font-size:12px;min-height:44px;padding:8px 12px}
+@media(max-width:650px){.sheet-actions{flex-wrap:wrap;justify-content:flex-end;gap:2px 8px}.app-version{font-size:10px}}
 dialog:has(#match-notes){width:min(620px,calc(100% - 32px));max-height:calc(100dvh - 32px);overflow-y:auto}
 #match-notes{min-height:clamp(200px,32dvh,320px)}
 .name-field{position:relative;min-width:0}
