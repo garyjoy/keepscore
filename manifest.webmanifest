@@ -1,0 +1,15 @@
+{
+  "id": "./",
+  "name": "KeepScore — Badminton",
+  "short_name": "KeepScore",
+  "description": "Offline badminton 3×3 doubles score sheets",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#f8fafc",
+  "icons": [
+    { "src": "assets/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "assets/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
